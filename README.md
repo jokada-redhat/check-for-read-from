@@ -1,62 +1,190 @@
 # check-for-read-from
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+## build app
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
-
-## Running the application in dev mode
-
-You can run your application in dev mode that enables live coding using:
-
-```shell script
-./mvnw compile quarkus:dev
+```sh
+./mvnw clean quarkus:build
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+## test 1 - no override values
 
-## Packaging and running the application
+### run app
 
-The application can be packaged using:
-
-```shell script
-./mvnw package
+```sh
+podman run -it --rm -p 8080:8080 \
+    -e DUMMY_FILE=/etc/bashrc \
+    -e DUMMY_ENV=override_value1 \
+    -v ./target/quarkus-app:/deployments \
+    registry.access.redhat.com/ubi9/openjdk-21-runtime
 ```
+### check env
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+* request
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+    ```sh
+    curl localhost:8080/read-from/env 
+    ```
 
-If you want to build an _über-jar_, execute the following command:
+* response
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
+    ```txt
+    default_value
+    ```
+
+### check file
+
+* request
+
+    ```sh
+    curl localhost:8080/read-from/file
+    ```
+
+* response
+
+    ```txt
+    NAME="Red Hat Enterprise Linux"
+    VERSION="9.4 (Plow)"
+    ID="rhel"
+    ID_LIKE="fedora"
+    VERSION_ID="9.4"
+    PLATFORM_ID="platform:el9"
+    PRETTY_NAME="Red Hat Enterprise Linux 9.4 (Plow)"
+    ANSI_COLOR="0;31"
+    LOGO="fedora-logo-icon"
+    CPE_NAME="cpe:/o:redhat:enterprise_linux:9::baseos"
+    HOME_URL="https://www.redhat.com/"
+    DOCUMENTATION_URL="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9"
+    BUG_REPORT_URL="https://bugzilla.redhat.com/"
+
+    REDHAT_BUGZILLA_PRODUCT="Red Hat Enterprise Linux 9"
+    REDHAT_BUGZILLA_PRODUCT_VERSION=9.4
+    REDHAT_SUPPORT_PRODUCT="Red Hat Enterprise Linux"
+    REDHAT_SUPPORT_PRODUCT_VERSION="9.4"
+    ```
+
+## test 2 - override values
+
+### run app
+
+```sh
+podman run -it --rm -p 8080:8080 \
+    -e DUMMY_FILE=/etc/bashrc \
+    -e DUMMY_ENV=override_value1 \
+    -v ./target/quarkus-app:/deployments \
+    registry.access.redhat.com/ubi9/openjdk-21-runtime
 ```
+### check env
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+* request
 
-## Creating a native executable
+    ```sh
+    curl localhost:8080/read-from/env 
+    ```
 
-You can create a native executable using:
+* response
 
-```shell script
-./mvnw package -Dnative
-```
+    ```txt
+    override_value1
+    ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
+### check file
 
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
+* request
 
-You can then execute your native executable with: `./target/check-for-read-from-1.0.0-SNAPSHOT-runner`
+    ```sh
+    curl localhost:8080/read-from/file
+    ```
 
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
+* response
 
-## Provided Code
+    ```txt
+    # /etc/bashrc
 
-### REST
+    # System wide functions and aliases
+    # Environment stuff goes in /etc/profile
 
-Easily start your REST Web Services
+    # It's NOT a good idea to change this file unless you know what you
+    # are doing. It's much better to create a custom.sh shell script in
+    # /etc/profile.d/ to make custom changes to your environment, as this
+    # will prevent the need for merging in future updates.
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+    # Prevent doublesourcing
+    if [ -z "$BASHRCSOURCED" ]; then
+    BASHRCSOURCED="Y"
+
+    # are we an interactive shell?
+    if [ "$PS1" ]; then
+        if [ -z "$PROMPT_COMMAND" ]; then
+        case $TERM in
+        xterm*|vte*)
+            if [ -e /etc/sysconfig/bash-prompt-xterm ]; then
+                PROMPT_COMMAND=/etc/sysconfig/bash-prompt-xterm
+            else
+                PROMPT_COMMAND='printf "\033]0;%s@%s:%s\007" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"'
+            fi
+            ;;
+        screen*)
+            if [ -e /etc/sysconfig/bash-prompt-screen ]; then
+                PROMPT_COMMAND=/etc/sysconfig/bash-prompt-screen
+            else
+                PROMPT_COMMAND='printf "\033k%s@%s:%s\033\\" "${USER}" "${HOSTNAME%%.*}" "${PWD/#$HOME/\~}"'
+            fi
+            ;;
+        *)
+            [ -e /etc/sysconfig/bash-prompt-default ] && PROMPT_COMMAND=/etc/sysconfig/bash-prompt-default
+            ;;
+        esac
+        fi
+        # Turn on parallel history
+        shopt -s histappend
+        history -a
+        # Turn on checkwinsize
+        shopt -s checkwinsize
+        [ "$PS1" = "\\s-\\v\\\$ " ] && PS1="[\u@\h \W]\\$ "
+        # You might want to have e.g. tty in prompt (e.g. more virtual machines)
+        # and console windows
+        # If you want to do so, just add e.g.
+        # if [ "$PS1" ]; then
+        #   PS1="[\u@\h:\l \W]\\$ "
+        # fi
+        # to your custom modification shell script in /etc/profile.d/ directory
+    fi
+
+    if ! shopt -q login_shell ; then # We're not a login shell
+        # Need to redefine pathmunge, it gets undefined at the end of /etc/profile
+        pathmunge () {
+            case ":${PATH}:" in
+                *:"$1":*)
+                    ;;
+                *)
+                    if [ "$2" = "after" ] ; then
+                        PATH=$PATH:$1
+                    else
+                        PATH=$1:$PATH
+                    fi
+            esac
+        }
+
+        # Set default umask for non-login shell only if it is set to 0
+        [ `umask` -eq 0 ] && umask 022
+
+        SHELL=/bin/bash
+        # Only display echos from profile.d scripts if we are no login shell
+        # and interactive - otherwise just process them to set envvars
+        for i in /etc/profile.d/*.sh; do
+            if [ -r "$i" ]; then
+                if [ "$PS1" ]; then
+                    . "$i"
+                else
+                    . "$i" >/dev/null
+                fi
+            fi
+        done
+
+        unset i
+        unset -f pathmunge
+    fi
+
+    fi
+    # vim:ts=4:sw=4
+    ```

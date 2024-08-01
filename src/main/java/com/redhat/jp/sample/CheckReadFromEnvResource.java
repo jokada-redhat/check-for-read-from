@@ -9,7 +9,7 @@ import jakarta.ws.rs.core.Response;
 @Path("/read-from/env")
 public class CheckReadFromEnvResource {
 
-    @ConfigProperty(name = "dummy.env_1")
+    @ConfigProperty(name = "dummy.env")
     String value1;
 
     @GET
