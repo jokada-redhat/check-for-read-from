@@ -10,7 +10,7 @@ public class CheckReadFromEnvRawResource {
 
     @GET
     public Response readFromEnvironment() {
-        String value = System.getProperty("DUMMY_ENV_RAW");
+        String value = System.getenv("DUMMY_ENV_RAW");
         Log.infov("Read env: {0}={1}", "DUMMY_ENV_RAW", value);
         return Response.ok(value).build();
     }
