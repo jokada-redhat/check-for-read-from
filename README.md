@@ -6,6 +6,11 @@
 ./mvnw clean quarkus:build
 ```
 
+```sh
+oc new-app java:openjdk-17-ubi8~https://github.com/jokada-redhat/check-for-read-from.git
+oc create route edge --service check-for-read-from --insecure-policy=Redirect
+```
+
 ## test 1 - no override values
 
 ### run app
