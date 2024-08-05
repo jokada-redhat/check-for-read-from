@@ -5,6 +5,7 @@
 ```sh
 ./mvnw clean quarkus:build
 ```
+## deploy app to OCP
 
 ```sh
 oc new-app java:openjdk-17-ubi8~https://github.com/jokada-redhat/check-for-read-from.git
